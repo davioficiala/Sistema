@@ -1,56 +1,120 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <title>Controle de Caixa</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        .container { max-width: 1000px; margin: 0 auto; }
-        button { padding: 10px 20px; font-size: 16px; margin: 20px; }
-        input, select { padding: 5px; margin: 5px 0; width: 300px; }
-        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        #menu { text-align: center; }
-        #caixaForm, #extratoTable { display: none; }
-    </style>
+<meta charset="UTF-8">
+<title>Controle de Caixa</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f9f9f9;
+        margin: 0;
+        padding: 0;
+    }
+    .container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    h1, h2 {
+        text-align: center;
+        color: #333;
+    }
+    #menu {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    button {
+        padding: 10px 20px;
+        margin: 5px;
+        font-size: 16px;
+        cursor: pointer;
+    }
+    #caixaForm, #extratoTable {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        display: none;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 15px;
+    }
+    .form-group label {
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+    .form-group input, .form-group select {
+        padding: 8px;
+        font-size: 14px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        width: 100%;
+    }
+    #buttonsForm {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+    th, td {
+        border: 1px solid #ccc;
+        padding: 10px;
+        text-align: left;
+    }
+    th {
+        background-color: #f2f2f2;
+    }
+</style>
 </head>
 <body>
 
 <div class="container">
     <h1>Controle de Caixa</h1>
-    
+
     <!-- Menu -->
     <div id="menu">
         <button onclick="mostrarFormulario()">Preencher Movimentações</button>
         <button onclick="mostrarExtrato()">Movimentações / Extrato</button>
     </div>
-    
-    <!-- Formulário de preenchimento (Página 1) -->
+
+    <!-- Formulário -->
     <div id="caixaForm">
-        <h2>Preencher Movimentações do Caixa lancamento</h2>
-        <label>Data:</label>
-        <input type="date" id="data">
-        
-        <label>Tipo:</label>
-        <select id="tipo">
-            <option value="Entrada">Entrada</option>
-            <option value="Saída">Saída</option>
-        </select>
-        
-        <label>Descrição:</label>
-        <input type="text" id="descricao">
-        
-        <label>Valor:</label>
-        <input type="number" id="valor" step="0.01">
-        
-        <button onclick="adicionarMovimento()">Adicionar</button>
-        <button onclick="mostrarExtrato()">Ver Extrato</button>
+        <h2>Adicionar Movimentação</h2>
+        <div class="form-group">
+            <label>Data</label>
+            <input type="date" id="data">
+        </div>
+        <div class="form-group">
+            <label>Tipo</label>
+            <select id="tipo">
+                <option value="Entrada">Entrada</option>
+                <option value="Saída">Saída</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Descrição</label>
+            <input type="text" id="descricao">
+        </div>
+        <div class="form-group">
+            <label>Valor</label>
+            <input type="number" id="valor" step="0.01">
+        </div>
+        <div id="buttonsForm">
+            <button onclick="adicionarMovimento()">Adicionar</button>
+            <button onclick="mostrarExtrato()">Ver Extrato</button>
+            <button onclick="mostrarMenu()">Menu</button>
+        </div>
     </div>
-    
-    <!-- Tabela de Extrato (Página 2) -->
+
+    <!-- Extrato -->
     <div id="extratoTable">
-        <h2>Movimentações / Extrato</h2>
+        <h2>Extrato do Caixa</h2>
         <table id="extrato">
             <thead>
                 <tr>
@@ -63,8 +127,11 @@
             </thead>
             <tbody></tbody>
         </table>
-        <button onclick="mostrarFormulario()">Preencher Novas Movimentações</button>
-        <button onclick="limparExtrato()">Limpar Extrato</button>
+        <div style="margin-top:15px;">
+            <button onclick="mostrarFormulario()">Adicionar Movimentação</button>
+            <button onclick="limparExtrato()">Limpar Extrato</button>
+            <button onclick="mostrarMenu()">Menu</button>
+        </div>
     </div>
 </div>
 
@@ -74,54 +141,52 @@ let saldo = 0;
 let movimentos = JSON.parse(localStorage.getItem('movimentos')) || [];
 saldo = parseFloat(localStorage.getItem('saldo')) || 0;
 
-// Funções de Navegação
-function mostrarFormulario() {
+// Navegação
+function mostrarMenu(){
+    document.getElementById('menu').style.display = 'block';
+    document.getElementById('caixaForm').style.display = 'none';
+    document.getElementById('extratoTable').style.display = 'none';
+}
+function mostrarFormulario(){
     document.getElementById('menu').style.display = 'none';
     document.getElementById('caixaForm').style.display = 'block';
     document.getElementById('extratoTable').style.display = 'none';
 }
-
-function mostrarExtrato() {
+function mostrarExtrato(){
     document.getElementById('menu').style.display = 'none';
     document.getElementById('caixaForm').style.display = 'none';
     document.getElementById('extratoTable').style.display = 'block';
     exibirExtrato();
 }
 
-// Funções de Movimentação
-function adicionarMovimento() {
+// Movimentações
+function adicionarMovimento(){
     const data = document.getElementById('data').value;
     const tipo = document.getElementById('tipo').value;
     const descricao = document.getElementById('descricao').value;
     const valor = parseFloat(document.getElementById('valor').value);
 
-    if (!data || !descricao || isNaN(valor) || valor <= 0) {
+    if(!data || !descricao || isNaN(valor) || valor <= 0){
         alert("Preencha todos os campos corretamente!");
         return;
     }
 
-    // Atualiza saldo
     saldo = tipo === "Entrada" ? saldo + valor : saldo - valor;
+    movimentos.push({data, tipo, descricao, valor, saldo});
 
-    // Adiciona movimento
-    movimentos.push({ data, tipo, descricao, valor, saldo });
-
-    // Salva no localStorage
     localStorage.setItem('movimentos', JSON.stringify(movimentos));
     localStorage.setItem('saldo', saldo);
 
-    // Limpa campos
     document.getElementById('data').value = '';
     document.getElementById('descricao').value = '';
     document.getElementById('valor').value = '';
 }
 
-// Função para exibir o extrato
-function exibirExtrato() {
+// Extrato
+function exibirExtrato(){
     const tbody = document.getElementById('extrato').getElementsByTagName('tbody')[0];
-    tbody.innerHTML = ''; // Limpa o extrato
+    tbody.innerHTML = '';
 
-    // Exibe os movimentos
     movimentos.forEach(mov => {
         const row = tbody.insertRow();
         row.insertCell(0).innerText = mov.data;
@@ -132,9 +197,8 @@ function exibirExtrato() {
     });
 }
 
-// Função para limpar extrato
-function limparExtrato() {
-    if (confirm("Deseja realmente limpar todo o extrato?")) {
+function limparExtrato(){
+    if(confirm("Deseja realmente limpar todo o extrato?")){
         localStorage.removeItem('movimentos');
         localStorage.removeItem('saldo');
         movimentos = [];
@@ -143,8 +207,8 @@ function limparExtrato() {
     }
 }
 
-// Inicia com o Menu
-mostrarFormulario();
+// Inicial
+mostrarMenu();
 </script>
 
 </body>
