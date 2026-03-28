@@ -1,172 +1,150 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>Sistema Financeiro</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<style>
-body { font-family: Arial; margin: 20px; }
-input, select, button { margin: 5px; }
-.card { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
-nav button { margin-right: 10px; }
-section { display: none; }
-section.active { display: block; }
-</style>
+    <meta charset="UTF-8">
+    <title>Controle de Caixa</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        button { padding: 10px 20px; font-size: 16px; margin: 20px; }
+        input, select { padding: 5px; margin: 5px 0; width: 300px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        #menu { text-align: center; }
+        #caixaForm, #extratoTable { display: none; }
+    </style>
 </head>
 <body>
 
-<h1>💰 Sistema Financeiro</h1>
-
-<nav>
-  <button onclick="abrirTela('cadastro')">Cadastro</button>
-  <button onclick="abrirTela('movimentacao')">Movimentação</button>
-  <button onclick="abrirTela('saldo')">Saldo</button>
-</nav>
-
-<!-- 1️⃣ Tela Cadastro -->
-<section id="cadastro">
-<h2>👤 Cadastro de Cliente</h2>
-<input id="nome" placeholder="Nome">
-<input id="cpf" placeholder="CPF/CNPJ">
-<button onclick="cadastrarCliente()">Cadastrar</button>
-
-<h3>Clientes Cadastrados</h3>
-<div id="listaClientes"></div>
-</section>
-
-<!-- 2️⃣ Tela Movimentação -->
-<section id="movimentacao">
-<h2>💸 Movimentação</h2>
-<select id="clienteSelect"></select>
-<select id="tipo">
-  <option value="entrada">Entrada</option>
-  <option value="saida">Saída</option>
-</select>
-<input id="valor" placeholder="Valor">
-<input id="origem" placeholder="Origem">
-<button onclick="movimentar()">Salvar</button>
-
-<h3>Histórico</h3>
-<div id="historico"></div>
-</section>
-
-<!-- 3️⃣ Tela Saldo -->
-<section id="saldo">
-<h2>📊 Saldo por Cliente</h2>
-<div id="saldos"></div>
-<button onclick="gerarPDF()">📄 Gerar PDF</button>
-</section>
+<div class="container">
+    <h1>Controle de Caixa</h1>
+    
+    <!-- Menu -->
+    <div id="menu">
+        <button onclick="mostrarFormulario()">Preencher Movimentações</button>
+        <button onclick="mostrarExtrato()">Movimentações / Extrato</button>
+    </div>
+    
+    <!-- Formulário de preenchimento (Página 1) -->
+    <div id="caixaForm">
+        <h2>Preencher Movimentações do Caixa</h2>
+        <label>Data:</label>
+        <input type="date" id="data">
+        
+        <label>Tipo:</label>
+        <select id="tipo">
+            <option value="Entrada">Entrada</option>
+            <option value="Saída">Saída</option>
+        </select>
+        
+        <label>Descrição:</label>
+        <input type="text" id="descricao">
+        
+        <label>Valor:</label>
+        <input type="number" id="valor" step="0.01">
+        
+        <button onclick="adicionarMovimento()">Adicionar</button>
+        <button onclick="mostrarExtrato()">Ver Extrato</button>
+    </div>
+    
+    <!-- Tabela de Extrato (Página 2) -->
+    <div id="extratoTable">
+        <h2>Movimentações / Extrato</h2>
+        <table id="extrato">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Tipo</th>
+                    <th>Descrição</th>
+                    <th>Valor</th>
+                    <th>Saldo</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <button onclick="mostrarFormulario()">Preencher Novas Movimentações</button>
+        <button onclick="limparExtrato()">Limpar Extrato</button>
+    </div>
+</div>
 
 <script>
-// Dados
-let clientes = JSON.parse(localStorage.getItem("clientes")) || [];
-let movs = JSON.parse(localStorage.getItem("movs")) || [];
+// Variáveis
+let saldo = 0;
+let movimentos = JSON.parse(localStorage.getItem('movimentos')) || [];
+saldo = parseFloat(localStorage.getItem('saldo')) || 0;
 
-// Troca de telas
-function abrirTela(id){
-  document.querySelectorAll("section").forEach(s => s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-  atualizarTela();
+// Funções de Navegação
+function mostrarFormulario() {
+    document.getElementById('menu').style.display = 'none';
+    document.getElementById('caixaForm').style.display = 'block';
+    document.getElementById('extratoTable').style.display = 'none';
 }
 
-// Salvar no LocalStorage
-function salvar(){
-  localStorage.setItem("clientes", JSON.stringify(clientes));
-  localStorage.setItem("movs", JSON.stringify(movs));
+function mostrarExtrato() {
+    document.getElementById('menu').style.display = 'none';
+    document.getElementById('caixaForm').style.display = 'none';
+    document.getElementById('extratoTable').style.display = 'block';
+    exibirExtrato();
 }
 
-// Cadastro
-function cadastrarCliente(){
-  let nome = document.getElementById("nome").value;
-  let cpf = document.getElementById("cpf").value;
-  if(!nome || !cpf){ alert("Preencha todos os campos"); return; }
-  clientes.push({id: Date.now(), nome, cpf});
-  salvar();
-  document.getElementById("nome").value = "";
-  document.getElementById("cpf").value = "";
-  atualizarTela();
+// Funções de Movimentação
+function adicionarMovimento() {
+    const data = document.getElementById('data').value;
+    const tipo = document.getElementById('tipo').value;
+    const descricao = document.getElementById('descricao').value;
+    const valor = parseFloat(document.getElementById('valor').value);
+
+    if (!data || !descricao || isNaN(valor) || valor <= 0) {
+        alert("Preencha todos os campos corretamente!");
+        return;
+    }
+
+    // Atualiza saldo
+    saldo = tipo === "Entrada" ? saldo + valor : saldo - valor;
+
+    // Adiciona movimento
+    movimentos.push({ data, tipo, descricao, valor, saldo });
+
+    // Salva no localStorage
+    localStorage.setItem('movimentos', JSON.stringify(movimentos));
+    localStorage.setItem('saldo', saldo);
+
+    // Limpa campos
+    document.getElementById('data').value = '';
+    document.getElementById('descricao').value = '';
+    document.getElementById('valor').value = '';
 }
 
-function excluirCliente(id){
-  clientes = clientes.filter(c => c.id !== id);
-  movs = movs.filter(m => m.cliente_id !== id);
-  salvar();
-  atualizarTela();
-}
+// Função para exibir o extrato
+function exibirExtrato() {
+    const tbody = document.getElementById('extrato').getElementsByTagName('tbody')[0];
+    tbody.innerHTML = ''; // Limpa o extrato
 
-// Movimentação
-function movimentar(){
-  let cliente_id = parseInt(document.getElementById("clienteSelect").value);
-  let tipo = document.getElementById("tipo").value;
-  let valor = parseFloat(document.getElementById("valor").value);
-  let origem = document.getElementById("origem").value;
-  if(!valor || !origem){ alert("Preencha todos os campos"); return; }
-  movs.push({id: Date.now(), cliente_id, tipo, valor, origem, data: new Date().toLocaleString()});
-  document.getElementById("valor").value = "";
-  document.getElementById("origem").value = "";
-  salvar();
-  atualizarTela();
-}
-
-// Saldo
-function calcularSaldo(cliente_id){
-  return movs.filter(m => m.cliente_id===cliente_id)
-             .reduce((s,m)=> s + (m.tipo==='entrada'? m.valor : -m.valor), 0);
-}
-
-// Atualizar telas
-function atualizarTela(){
-  // Lista clientes
-  let lista = document.getElementById("listaClientes");
-  let select = document.getElementById("clienteSelect");
-  let historico = document.getElementById("historico");
-  let saldosDiv = document.getElementById("saldos");
-
-  lista.innerHTML = "";
-  select.innerHTML = "";
-  historico.innerHTML = "";
-  saldosDiv.innerHTML = "";
-
-  clientes.forEach(c=>{
-    // Cadastro
-    lista.innerHTML += `<div class="card">${c.nome} - ${c.cpf} 
-      <button onclick="excluirCliente(${c.id})">Excluir</button></div>`;
-
-    // Movimentação
-    select.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
-
-    // Histórico
-    let hist = movs.filter(m=>m.cliente_id===c.id);
-    hist.forEach(m=>{
-      historico.innerHTML += `<div class="card">
-        ${m.data} - ${m.tipo} - R$ ${m.valor.toFixed(2)} - ${m.origem}</div>`;
+    // Exibe os movimentos
+    movimentos.forEach(mov => {
+        const row = tbody.insertRow();
+        row.insertCell(0).innerText = mov.data;
+        row.insertCell(1).innerText = mov.tipo;
+        row.insertCell(2).innerText = mov.descricao;
+        row.insertCell(3).innerText = parseFloat(mov.valor).toFixed(2);
+        row.insertCell(4).innerText = parseFloat(mov.saldo).toFixed(2);
     });
-
-    // Saldo
-    let saldo = calcularSaldo(c.id);
-    saldosDiv.innerHTML += `<div class="card">${c.nome} → Saldo: R$ ${saldo.toFixed(2)}</div>`;
-  });
 }
 
-// PDF
-function gerarPDF(){
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  doc.setFontSize(16);
-  doc.text("📊 Saldo por Cliente", 10, 20);
-  let y = 30;
-  clientes.forEach(c=>{
-    let saldo = calcularSaldo(c.id).toFixed(2);
-    doc.setFontSize(12);
-    doc.text(`${c.nome} (${c.cpf}) → R$ ${saldo}`, 10, y);
-    y += 10;
-  });
-  doc.save("saldo_clientes.pdf");
-  alert("PDF gerado! Você pode enviar pelo WhatsApp.");
+// Função para limpar extrato
+function limparExtrato() {
+    if (confirm("Deseja realmente limpar todo o extrato?")) {
+        localStorage.removeItem('movimentos');
+        localStorage.removeItem('saldo');
+        movimentos = [];
+        saldo = 0;
+        exibirExtrato();
+    }
 }
 
-// Inicializa primeira tela
-abrirTela('cadastro');
+// Inicia com o Menu
+mostrarFormulario();
 </script>
 
 </body>
